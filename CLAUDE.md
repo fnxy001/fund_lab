@@ -66,16 +66,76 @@ fund_lab/
 └── data/                  # 原始文件数据（临时过渡，长期走数据库）
 ```
 
+## 数据流 & 模块依赖链
+
+```
+原始数据（CSV/Excel）
+    │
+    ▼
+src/common/utils.py          load() + validate()
+    │  holdings: [fund_name, trade_date, weight]
+    │  nav:       [fund_name, trade_date, unit_nav, acc_nav]
+    │  benchmark: [trade_date, nav] (optional)
+    ▼
+src/product/nav.py           process_nav(nav, freq)
+    │  calc_adjusted_nav()  → adj_nav = 复权净值
+    │  resample_nav()       → D/W/M 频率统一
+    ▼
+src/portfolio/engine.py      HoldingsEngine(nav, holdings).calc()
+    │  → { portfolio_nav, weights_close, fund_returns, fund_nav }
+    ▼
+    ├── src/portfolio/performance.py   PerformanceAnalyzer(nav_dict, freq)
+    │     25+ 指标 / 多区间 / 滚动 / 子基金对比 / 持有期分布
+    │
+    └── src/portfolio/attribution.py   AttributionAnalyzer(portfolio_result, freq)
+          收益归因（几何累积） + 风险归因（贡献序列波动法）
+```
+
+## 核心 API 入口
+
+```python
+from src.common.utils import load
+from src.product.nav import process_nav
+from src.portfolio.engine import calc_portfolio_from_holdings
+from src.portfolio.performance import PerformanceAnalyzer
+from src.portfolio.attribution import AttributionAnalyzer
+
+# 1. 加载数据
+holdings, nav, benchmark = load("持仓.csv", "净值.csv")
+
+# 2. 处理净值
+nav_processed = process_nav(nav, freq="W")
+
+# 3. 计算组合净值
+result = calc_portfolio_from_holdings(holdings, nav_processed)
+
+# 4. 业绩分析
+analyzer = PerformanceAnalyzer(
+    nav_dict={"组合": result["portfolio_nav"], **result["fund_nav"]},
+    freq="W",
+    portfolio_benchmark=benchmark["nav"],
+)
+analyzer.metrics_table("近1年")          # 全部实体 × 单区间
+analyzer.metrics_multi_period()          # 主体 × 多区间
+analyzer.fund_comparison_metrics("共同区间")  # 子基金横向对比
+
+# 5. 归因分析
+attr = AttributionAnalyzer(result, freq="W")
+attr.return_attribution_table("近1年")   # 收益归因
+attr.risk_attribution_table("近1年")     # 风险归因
+attr.combined_attribution("近1年")       # 合并表
+```
+
+## Git 远程配置
+
+- **双远程**：`origin` (GitHub SSH) + `gitee` (Gitee HTTPS)
+- 用户：GitHub/Gitee 均为 `fnxy001`，邮箱 `fnxy001@163.com`
+
 ## 当前状态
 
-- 组合层核心代码已有（portfolio.py, performance.py, attribution.py）
-- 数据加载目前走文件模式，待改造为数据库读写
-- 产品层待建设
-- 数据库表结构待确认
-
-## 用户偏好
-
-- 所有交互使用简体中文
-- 代码注释使用中文，变量/函数名保持英文
-- 数据口径明确、计算准确是第一原则
-- 用文字描述代替截图（DeepSeek 后端不支持图片解析）
+- ✅ 组合层代码完整（engine / performance / attribution）
+- ✅ 净值处理（复权净值 + 频率转换）
+- ⚠️ 数据加载走文件模式（`src/common/utils.py`），`db.py` 为占位符
+- ❌ 产品层未建设（`info.py` / `analytics.py` 为 TODO）
+- ❌ 无测试、无 CLI 入口、无 main script
+- ❌ 数据库表结构未定义

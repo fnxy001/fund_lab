@@ -1,16 +1,40 @@
-"""全局配置参数"""
+"""全局配置参数
 
-RISK_FREE_RATE = 0.0
+数据库连接信息从 .env 文件读取，换环境只需修改 .env，不动代码。
+"""
 
-BENCHMARK_NAME = "沪深300"
+import os
+from dotenv import load_dotenv
 
-DEFAULT_FREQ = "W"
+load_dotenv()  # 加载项目根目录的 .env 文件
+
+# ============================================================================
+# 数据库配置（环境变量）
+# ============================================================================
+
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+DB_NAME = os.getenv("DB_NAME", "fund_lab")
+
+DB_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+# ============================================================================
+# 分析参数
+# ============================================================================
+
+RISK_FREE_RATE = float(os.getenv("RISK_FREE_RATE", "0.0"))
+
+BENCHMARK_NAME = os.getenv("BENCHMARK_NAME", "沪深300")
+
+DEFAULT_FREQ = os.getenv("DEFAULT_FREQ", "W")
 
 ANNUAL_FACTOR = {"D": 252, "W": 52, "M": 12}
 
 FREQ_LABEL = {"D": "日频/实际频率", "W": "周频", "M": "月频"}
 
-# ---------------------------------------------------------------------------
+# ============================================================================
 # 预设时间区间
 #
 # D（日频 / 实际频率）：
@@ -24,7 +48,7 @@ FREQ_LABEL = {"D": "日频/实际频率", "W": "周频", "M": "月频"}
 #   - 交易日历 = 全部资产净值日期的并集
 #   - 起始日、结束日确定后，各资产在该日期有数据则计算，无数据则 NaN
 #   - 保证不同资产比较区间一致
-# ---------------------------------------------------------------------------
+# ============================================================================
 
 # D：自然日回退天数
 PERIOD_CALENDAR_DAYS = {
@@ -59,7 +83,7 @@ PERIOD_LOOKBACK_BARS = {
 }
 
 # D 频覆盖率最低阈值（实际交易日 / 期望交易日）
-DAILY_MIN_COVERAGE = 0.5
+DAILY_MIN_COVERAGE = float(os.getenv("DAILY_MIN_COVERAGE", "0.5"))
 
 ALL_PERIODS = [
     "近1周", "近1月", "近3月", "近半年",
