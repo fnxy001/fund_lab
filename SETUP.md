@@ -1,234 +1,257 @@
-# Fund Lab — 环境配置说明书
+# Fund Lab — 项目迁移指南
 
-换环境运行只需 **3 步**，零代码修改。
+换电脑？换服务器？复制给同事？照着下面一步一步做就行。
 
 ---
 
-## 1. 快速开始
+## 开始之前
 
-```bash
-# ① 克隆项目
+你需要确保新环境已经安装了 **Python**。
+
+怎么检查？打开终端（Windows 上是命令提示符或 PowerShell），输入：
+
+```
+python --version
+```
+
+如果显示 `Python 3.10.x` 或更高版本，说明已安装，继续下一步。
+如果提示"找不到命令"或版本低于 3.10，先去 [python.org](https://www.python.org/downloads/) 下载安装。
+
+---
+
+## 第一步：把项目代码拿到新电脑上
+
+### 方式一：从 GitHub 下载（推荐）
+
+打开终端，进入你想放项目的文件夹，输入：
+
+```
 git clone git@github.com:fnxy001/fund_lab.git
+```
+
+下载完成后，进入项目目录：
+
+```
 cd fund_lab
+```
 
-# ② 安装依赖
+> 如果提示 `git: command not found`，说明没装 Git。去 [git-scm.com](https://git-scm.com/download/win) 下载安装。
+
+### 方式二：直接复制文件夹
+
+把整个 `fund_lab` 文件夹复制到新电脑上（U 盘、网盘、局域网都行）。
+
+然后打开终端，进入这个文件夹：
+
+```
+cd 你放项目的路径/fund_lab
+```
+
+---
+
+## 第二步：安装项目需要的 Python 包
+
+在项目目录下，输入这一行命令：
+
+```
 pip install -r requirements.txt
+```
 
-# ③ 配置环境
+它会自动安装项目依赖的所有包。看到进度条走完就可以了。
+
+> 如果中途报错，通常是网络问题。试一下用国内镜像：
+> ```
+> pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+> ```
+
+---
+
+## 第三步：创建配置文件
+
+项目里有一个配置模板叫 `.env.example`，把它复制一份叫 `.env`：
+
+**Windows 上：**
+
+```
+copy .env.example .env
+```
+
+**Mac / Linux 上：**
+
+```
 cp .env.example .env
-# 编辑 .env 填入数据库密码（如果只用文件模式，跳过）
-
-# 开始使用
-python
 ```
+
+### 然后决定：你用哪种数据来源？
 
 ---
 
-## 2. 环境要求
+### 情况 A：你只是分析 CSV / Excel 文件（不用数据库）
 
-| 组件 | 最低版本 | 说明 |
-|------|----------|------|
-| Python | 3.10+ | |
-| pip 包 | `pip install -r requirements.txt` | 一键安装 |
-| MySQL | 8.0（可选） | 仅数据库模式需要 |
+恭喜，**什么都不用改，配置完成**。直接把你的数据文件放到 `data/` 目录下就行。
 
-**依赖清单：**
-```
-pandas>=2.0          # 数据处理核心
-numpy>=1.24          # 数值计算
-plotly>=5.18         # 可视化
-openpyxl>=3.1        # Excel 读写
-pymysql>=1.1         # MySQL 连接
-sqlalchemy>=2.0      # 数据库 ORM
-python-dotenv>=1.0   # 环境变量管理
-streamlit>=1.28      # Web UI（可选）
-```
+继续跳到"第四步：验证是否配置成功"。
 
 ---
 
-## 3. 配置说明（`.env` 文件）
+### 情况 B：你要连接 MySQL 数据库
 
-所有环境差异集中在 `.env` 文件，**换环境只改这一个文件**：
+用记事本打开刚才创建的 `.env` 文件，修改里面的数据库信息：
 
-```ini
-# --- 数据库（数据库模式才需要）---
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password_here
-DB_NAME=fund_lab
-
-# --- 分析参数（通常不改）---
-RISK_FREE_RATE=0.0
-BENCHMARK_NAME=沪深300
-DEFAULT_FREQ=W
-DAILY_MIN_COVERAGE=0.5
+```
+DB_HOST=192.168.1.100      ← 改成数据库服务器的 IP 地址
+DB_PORT=3306               ← 改成数据库的端口号
+DB_USER=root               ← 改成数据库的用户名
+DB_PASSWORD=你的真实密码    ← 改成你的数据库密码
+DB_NAME=fund_lab           ← 改成你的数据库名称
 ```
 
-**配置项说明：**
+改完保存，关闭文件。
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `DB_HOST` | localhost | 数据库主机地址 |
-| `DB_PORT` | 3306 | 数据库端口 |
-| `DB_USER` | root | 数据库用户 |
-| `DB_PASSWORD` | — | 数据库密码 |
-| `DB_NAME` | fund_lab | 数据库名 |
-| `RISK_FREE_RATE` | 0.0 | 年化无风险利率 |
-| `BENCHMARK_NAME` | 沪深300 | 基准名称 |
-| `DEFAULT_FREQ` | W | 默认频率（D/W/M） |
-
-> ⚠️ `.env` 包含密码，**不会提交到 Git**。`.env.example` 是模板，可以提交。
+> ⚠️ `.env` 文件里有密码，**不要**把它发给别人，**不要**提交到 Git。
 
 ---
 
-## 4. 数据模式
+## 第四步：验证是否配置成功
 
-项目支持两种数据来源，按需选择：
+在终端里输入：
 
-### 模式 A：文件模式（开发 / 快速验证）
+```
+python -c "from config import DB_URL; print('配置读取成功')"
+```
 
-数据放 `data/` 目录，直接加载 CSV / Excel：
+如果输出 `配置读取成功`，说明一切正常。
+
+再输入：
+
+```
+python -c "from src.portfolio.engine import HoldingsEngine; print('模块加载成功')"
+```
+
+如果输出 `模块加载成功`，说明所有代码都能正常工作了。
+
+> 如果这里报错，通常是第二步的包没装全，重新跑一次 `pip install -r requirements.txt`。
+
+---
+
+## 第五步：开始使用
+
+打开 Python（在终端里输入 `python`），按下面的流程操作：
 
 ```python
+# ---------- 第 1 步：加载你的数据 ----------
+
+# 如果用文件模式（数据在 data/ 目录下）：
 from src.common.utils import load
-
-# 直接加载文件
-holdings, nav, benchmark = load(
-    "data/持仓.csv",
-    "data/净值.csv",
-    "data/基准.csv"        # 可选
-)
-```
-
-不需要数据库，开箱即用。
-
-### 模式 B：数据库模式（生产 / 全量数据）
-
-需要 MySQL 8.0 运行中，且表结构已建好：
-
-```python
-from src.common.db import DB
-
-db = DB()
-
-# 加载持仓数据
-holdings = db.load_holdings(start_date="2020-01-01")
-
-# 加载净值数据
-nav = db.load_nav(fund_names=["基金A", "基金B"])
-
-# 加载基准数据
-benchmark = db.load_benchmark("沪深300")
-```
-
-**换环境数据源不同？** 只需确保 `.env` 连到新数据库，或用文件模式。
-
----
-
-## 5. 两种场景操作指南
-
-### 场景一：本地开发（你的笔记本）
-
-```
-数据来源：data/ 目录的 CSV 文件
-.env：    DB 参数随意填（文件模式不读数据库）
-操作：    直接跑 Python 脚本，或 streamlit run app.py
-```
-
-### 场景二：数据服务器（有全量数据库）
-
-```
-数据来源：MySQL 8.0 数据库
-.env：    填入真实 DB_HOST、DB_PASSWORD 等
-操作：
-  1. 确认 MySQL 服务运行中
-  2. 确认 fund_lab 数据库已建表
-  3. 用 db.py 接口读写数据
-```
-
----
-
-## 6. 项目结构速查
-
-```
-fund_lab/
-├── SETUP.md              # ← 你正在看
-├── CLAUDE.md             # 项目技术文档
-├── requirements.txt      # pip 依赖清单
-├── config.py             # 全局配置（自动读 .env）
-├── .env.example          # 配置模板
-├── .env                  # 你的本地配置（不提交）
-├── src/
-│   ├── common/
-│   │   ├── db.py         # 数据库接口
-│   │   └── utils.py      # 文件加载、数据校验
-│   ├── product/
-│   │   ├── nav.py        # 净值处理（复权 + 频率转换）
-│   │   ├── info.py       # 产品基础信息
-│   │   └── analytics.py  # 单产品分析
-│   └── portfolio/
-│       ├── engine.py     # 组合净值引擎
-│       ├── performance.py # 业绩指标（25+指标）
-│       └── attribution.py # 收益归因 + 风险归因
-└── data/                 # 原始数据文件（文件模式用）
-```
-
----
-
-## 7. 常见操作
-
-```python
-# ---------- 完整分析流程 ----------
-
-from src.common.utils import load
-from src.product.nav import process_nav
-from src.portfolio.engine import calc_portfolio_from_holdings
-from src.portfolio.performance import PerformanceAnalyzer
-from src.portfolio.attribution import AttributionAnalyzer
-
-# 1. 加载数据
 holdings, nav, benchmark = load("data/持仓.csv", "data/净值.csv")
 
-# 2. 处理净值（复权 + 周频）
-nav_processed = process_nav(nav, freq="W")
+# 如果用数据库模式：
+from src.common.db import DB
+db = DB()
+holdings = db.load_holdings(start_date="2020-01-01")
+nav = db.load_nav()
+benchmark = db.load_benchmark("沪深300")
 
-# 3. 计算组合净值
+
+# ---------- 第 2 步：处理净值 ----------
+from src.product.nav import process_nav
+nav_processed = process_nav(nav, freq="W")   # W=周频，也可以改成 D=日频 M=月频
+
+
+# ---------- 第 3 步：计算组合净值 ----------
+from src.portfolio.engine import calc_portfolio_from_holdings
 result = calc_portfolio_from_holdings(holdings, nav_processed)
 
-# 4. 业绩分析
+
+# ---------- 第 4 步：看业绩指标 ----------
+from src.portfolio.performance import PerformanceAnalyzer
+
 analyzer = PerformanceAnalyzer(
     nav_dict={"组合": result["portfolio_nav"], **result["fund_nav"]},
     freq="W",
     portfolio_benchmark=benchmark["nav"],
 )
-print(analyzer.metrics_table("近1年"))          # 单区间指标
-print(analyzer.metrics_multi_period())           # 多区间指标
 
-# 5. 归因分析
+print(analyzer.metrics_table("近1年"))           # 所有产品的一年表现
+print(analyzer.metrics_multi_period())           # 组合在多个时间段的表现
+
+
+# ---------- 第 5 步：看收益归因 ----------
+from src.portfolio.attribution import AttributionAnalyzer
+
 attr = AttributionAnalyzer(result, freq="W")
-print(attr.return_attribution_table("近1年"))    # 收益归因
-print(attr.combined_attribution("近1年"))         # 合并归因
+print(attr.return_attribution_table("近1年"))    # 哪只基金贡献了多少收益
+print(attr.combined_attribution("近1年"))         # 收益 + 风险合在一起看
 ```
 
 ---
 
-## 8. 换环境检查清单
+## 常见问题
 
-复制项目到新环境后，逐项确认：
+### Q: pip 安装包特别慢怎么办？
 
-- [ ] Python 3.10+ 已安装
-- [ ] `pip install -r requirements.txt` 无报错
-- [ ] `.env` 已从 `.env.example` 复制并编辑
-- [ ] 文件模式：`data/` 目录有数据文件；或数据库模式：MySQL 可连接
-- [ ] `python -c "import config; print('OK')"` 通过
-- [ ] `python -c "from src.portfolio.engine import HoldingsEngine; print('OK')"` 通过
+用清华镜像加速：
+
+```
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+### Q: 提示 `ModuleNotFoundError: No module named 'xxx'`
+
+说明那个包没装上，手动装一下：
+
+```
+pip install 缺失的包名
+```
+
+### Q: 数据库连不上
+
+先确认三件事：
+
+1. MySQL 服务是不是在运行？（Windows 上搜"服务"，找 MySQL80，看看状态是不是"正在运行"）
+2. `.env` 里的 `DB_HOST` 和 `DB_PASSWORD` 写对了没？
+3. 网络能不能 ping 通数据库服务器？
+
+在 Python 里测试一下：
+
+```python
+from src.common.db import DB
+db = DB()
+print(db.test_connection())   # True = 连上了，False = 没连上
+```
+
+### Q: 提示 `ModuleNotFoundError: No module named 'config'`
+
+你当前不在项目目录下。先 `cd` 到 `fund_lab` 文件夹，再运行 Python。
+
+### Q: GitHub 连不上怎么办？
+
+项目同时备份在 Gitee（码云），国内可以直接访问：
+
+```
+git clone https://gitee.com/fnxy001/fund_lab.git
+```
 
 ---
 
-## 9. 注意事项
+## 附录：项目里每个文件是干什么的
 
-1. **`.env` 绝不提交 Git** —— 已在 `.gitignore` 中排除
-2. **频率无关设计** —— 日/周/月频使用同一套 API，改 `DEFAULT_FREQ` 即可
-3. **文件模式是过渡方案** —— 长期建议用数据库模式（数据更全、查询更灵活）
-4. **MySQL 本地服务** —— Windows 上服务名为 `MySQL80`，默认开机自启
+```
+fund_lab/
+├── SETUP.md               ← 你正在看的文档
+├── requirements.txt       ← 需要安装哪些 Python 包
+├── config.py              ← 全局配置（自动读 .env）
+├── .env.example           ← 配置模板（可以提交到 git）
+├── .env                   ← 你自己的配置（不要提交！）
+├── data/                  ← 放你的原始数据文件
+├── src/
+│   ├── common/
+│   │   ├── db.py          ← 从数据库读数据
+│   │   └── utils.py       ← 从文件读数据（CSV/Excel）
+│   ├── product/
+│   │   └── nav.py         ← 净值处理（复权 + 日周月频）
+│   └── portfolio/
+│       ├── engine.py      ← 核心：计算组合净值
+│       ├── performance.py ← 业绩指标（收益率、回撤、夏普等 25+）
+│       └── attribution.py ← 归因分析（收益归因 + 风险归因）
+```
